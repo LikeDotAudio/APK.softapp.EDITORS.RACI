@@ -1,0 +1,18 @@
+{
+  "name": "raci-matrix-editor",
+  "version": "1.0.0",
+  "description": "RACI Matrix Operational Editor on APK.audio",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "keywords": [
+    "raci",
+    "roles",
+    "project",
+    "accountable",
+    "responsible"
+  ],
+  "author": "Anthony Kuzub",
+  "license": "MIT"
+}

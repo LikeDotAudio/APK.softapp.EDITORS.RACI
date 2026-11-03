@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RACI Matrix Operational Editor — APK.audio</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; background: #0f1218; color: #e2e8f0; margin: 0; padding: 20px; }
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #283348; padding-bottom: 12px; margin-bottom: 20px; }
+    .card { background: #171d27; border: 1px solid #283348; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #222c3d; font-family: monospace; }
+    .badge-r { color: #38bdf8; font-weight: 700; }
+    .badge-a { color: #f43f5e; font-weight: 700; }
+    .badge-c { color: #fbbf24; font-weight: 700; }
+    .badge-i { color: #94a3b8; font-weight: 700; }
+    button { background: #0284c7; color: #fff; border: 1px solid #38bdf8; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <header>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <span style="font-size:20px;">👥</span>
+      <h2>RACI Matrix Operational Editor</h2>
+    </div>
+    <button id="btn-export">Export RACI Matrix</button>
+  </header>
+
+  <div class="card">
+    <h3 style="font-size:14px; text-transform:uppercase; color:#94a3b8;">Operational RACI Assignment (R: Responsible · A: Accountable · C: Consulted · I: Informed)</h3>
+    <table id="raci-table"></table>
+  </div>
+
+  <script type="module">
+    import { RaciModel } from './js/raciApp.js';
+    const model = new RaciModel();
+    const table = document.getElementById('raci-table');
+
+    const header = document.createElement('tr');
+    header.innerHTML = '<th>Deliverable Task</th>' + model.roles.map(r => `<th>${r}</th>`).join('');
+    table.appendChild(header);
+
+    model.tasks.forEach(t => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><b>${t.task}</b></td>` + model.roles.map(r => {
+        const val = t.raci[r] || '-';
+        const cls = val === 'R' ? 'badge-r' : val === 'A' ? 'badge-a' : val === 'C' ? 'badge-c' : 'badge-i';
+        return `<td class="${cls}">${val}</td>`;
+      }).join('');
+      table.appendChild(tr);
+    });
+
+    document.getElementById('btn-export').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(model.tasks, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'raci-matrix.json';
+      a.click();
+    });
+  </script>
+</body>
+</html>
