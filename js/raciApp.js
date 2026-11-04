@@ -167,7 +167,7 @@ export class RaciApp {
         <th style="text-align: center; min-width: 120px;">
           <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
             <span>${role}</span>
-            <button class="btn-remove-role" data-role="${role}" title="Remove Role" style="background: none; border: none; color: #8B9BB4; cursor: pointer; font-size: 11px;">×</button>
+            <button class="btn-remove-role" data-role="${role}" title="Remove Role" style="background: none; border: none; color: #888888; cursor: pointer; font-size: 11px;">×</button>
           </div>
         </th>
       `;
