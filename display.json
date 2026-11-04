@@ -1,8 +1,8 @@
 {
   "name": "RACI Matrix Operational Editor",
   "icon": "👥",
-  "group": "Project",
-  "subGroup": "Management & Timelines",
+  "group": "Design",
+  "subGroup": "Project & Engineering Docs",
   "description": "RACI Matrix Operational Editor: define organizational roles across project deliverable milestones (R: Responsible, A: Accountable, C: Consulted, I: Informed) for facility build handovers.",
   "app": "APK:Softapps/EDITORS/EDITORS.RACI/index.html"
 }
