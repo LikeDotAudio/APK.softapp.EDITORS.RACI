@@ -1,6 +1,9 @@
 // Part of the APK.audio project — http://APK.audio — made by Anthony Kuzub
 // MIT Licence. Free, for everyone, for ever. Full text in LICENSE at the root.
 
+export const RACI_BLOCK_TYPE = 'raci_matrix';
+export const RACI_SEQUENCE = ['-', 'R', 'A', 'C', 'I'];
+
 export class RaciModel {
   constructor(matrixTitle = 'FACILITY-COMMISSIONING-RACI') {
     this.matrixTitle = matrixTitle;
@@ -55,8 +58,25 @@ export class RaciModel {
     }
   }
 
+  renameRole(oldName, newName) {
+    const n = String(newName || '').trim();
+    const idx = this.roles.indexOf(oldName);
+    if (idx === -1 || !n || n === oldName || this.roles.includes(n)) return false;
+    this.roles[idx] = n;
+    this.tasks.forEach(t => {
+      t.raci[n] = t.raci[oldName] || '-';
+      delete t.raci[oldName];
+    });
+    return true;
+  }
+
+  /** Deliverables with no single Accountable (A) owner. */
+  missingAccountable() {
+    return this.tasks.filter(t => Object.values(t.raci).filter(v => v === 'A').length === 0).length;
+  }
+
   cycleCell(taskIndex, role) {
-    const sequence = ['-', 'R', 'A', 'C', 'I'];
+    const sequence = RACI_SEQUENCE;
     if (this.tasks[taskIndex]) {
       const cur = this.tasks[taskIndex].raci[role] || '-';
       const nextIdx = (sequence.indexOf(cur) + 1) % sequence.length;
@@ -74,7 +94,7 @@ export class RaciModel {
 
   toBlock() {
     return {
-      type: 'raci_matrix',
+      type: RACI_BLOCK_TYPE,
       id: `raci_${this.matrixTitle.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
       matrixTitle: this.matrixTitle,
       roles: [...this.roles],
@@ -82,7 +102,9 @@ export class RaciModel {
     };
   }
 
-  fromBlock(block = {}) {
+  fromBlock(block) {
+    if (!block || typeof block !== 'object') return false;
+    if (!Array.isArray(block.roles) && !Array.isArray(block.tasks)) return false;
     if (block.matrixTitle) this.matrixTitle = block.matrixTitle;
     if (Array.isArray(block.roles)) {
       this.roles = [...block.roles];
@@ -90,5 +112,6 @@ export class RaciModel {
     if (Array.isArray(block.tasks)) {
       this.tasks = JSON.parse(JSON.stringify(block.tasks));
     }
+    return true;
   }
 }

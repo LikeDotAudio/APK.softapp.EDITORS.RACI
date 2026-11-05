@@ -6,6 +6,7 @@
   <title>RACI Matrix Operational Editor</title>
   <link rel="stylesheet" href="./vendor/apk-contracts/apk-tokens.css">
   <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="./vendor/apk-table/apk-table.css">
   <style>
     .main-layout {
       display: flex;
@@ -38,25 +39,6 @@
     .table-container {
       flex: 1;
       overflow: auto;
-    }
-    table.data-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-    table.data-table th {
-      background: var(--surface-secondary, #0f0f11);
-      color: var(--text-muted, #888888);
-      padding: 10px 12px;
-      text-align: left;
-      border-bottom: 1px solid var(--border-color, #2c2c2c);
-      font-size: 11px;
-      text-transform: uppercase;
-    }
-    table.data-table td {
-      padding: 8px 12px;
-      border-bottom: 1px solid var(--border-color, #2c2c2c);
-      color: var(--text-bright, #f4f4f5);
     }
     .inline-cell {
       background: rgba(255, 255, 255, 0.02);
@@ -132,6 +114,18 @@
       align-items: center;
       gap: 6px;
     }
+    .roles-box {
+      max-width: 420px;
+      padding: 12px 0;
+    }
+    .roles-title {
+      font-size: 11px;
+      color: var(--text-muted, #888888);
+      margin-bottom: 4px;
+    }
+    [data-apk-state="good"] { color: var(--apk-state-good); }
+    [data-apk-state="kinda"] { color: var(--apk-state-kinda); }
+    [data-apk-state="dead"] { color: var(--apk-state-dead); }
   </style>
 </head>
 <body class="deep-horizon">
@@ -144,7 +138,6 @@
     <div class="window-actions">
       <input type="text" id="prop-title" placeholder="Matrix Title" style="background: var(--surface-bg); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; color: var(--text-bright); font-size: 12px; width: 220px;">
       <button id="btn-open" class="btn-action">📂 Open Block</button>
-      <button id="btn-discovered" class="btn-action">⚡ Discovered</button>
       <button id="btn-save" class="btn-action btn-primary">💾 Save & Return</button>
       <button id="btn-close" class="btn-action btn-close">✕</button>
     </div>
@@ -170,14 +163,19 @@
       </div>
 
       <div class="table-container">
-        <table class="data-table">
-          <thead id="raci-table-header"></thead>
-          <tbody id="raci-table-body"></tbody>
-        </table>
+        <div id="raci-table"></div>
+        <div class="roles-box">
+          <div class="roles-title">Roles (rename in place, ✕ removes the column)</div>
+          <div id="raci-roles"></div>
+        </div>
       </div>
     </div>
   </div>
 
+  <script src="./vendor/apk-contracts/apk-contracts.global.js"></script>
+  <script src="/FrontEnd/shared/apk-bus.js"></script>
+  <script src="./vendor/apk-softapp/apk-softapp.js"></script>
+  <script src="./vendor/apk-table/apk-table.js"></script>
   <script type="module" src="js/raciApp.js"></script>
 </body>
 </html>
