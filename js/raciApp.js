@@ -25,15 +25,43 @@ export class RaciApp {
       onLoad: (b, m) => this.handleBlockLoaded(b, m),
       onRequest: () => this.model.toBlock(),
     });
+    S.describe({
+      name: 'RACI Matrix Editor',
+      does: 'Says who is Responsible, Accountable, Consulted and Informed for each deliverable, and flags any deliverable with no single Accountable lead.',
+      inputs: [
+        { name: 'RACI block', from: 'the CAD drawing (raci_matrix block) when opened from the CAD', kind: 'cad' },
+        { name: 'Block file', from: 'a .json file picked with Open Block', kind: 'file' },
+      ],
+      outputs: [
+        { name: 'RACI block', to: 'the CAD drawing on Save & Return, or a .json download when standalone', kind: 'file' },
+      ],
+      controls: [
+        { name: 'Matrix title', how: 'Type in the title box (top bar)' },
+        { name: 'Add role', how: 'Type a role name, then + Add Role or Enter' },
+        { name: 'Add deliverable', how: '+ Add Deliverable; edit its name in the table' },
+        { name: 'Set R / A / C / I', how: 'Click a cell badge to cycle R → A → C → I → -' },
+        { name: 'Rename / delete a role or deliverable', how: 'Edit or delete the row in its table' },
+        { name: 'Save & Return / Close', how: 'Top-bar buttons: hand the block back to the CAD, or close the editor' },
+      ],
+      problems: ['file_unreadable', 'bad_json', 'bad_input', 'save_failed'],
+    });
     this.initControls();
     this.render();
   }
 
   handleBlockLoaded(block, meta = {}) {
-    if (!this.model.fromBlock(block)) return;
+    if (!this.model.fromBlock(block)) {
+      window.APKSoftapp.showProblem('bad_input', {
+        subject: meta.title || meta.blockName || 'RACI block',
+        detail: 'This is not a RACI matrix: it has no roles or tasks list.',
+        fix: ['Open a .json saved by this editor (it has "roles" and "tasks"), or start a new matrix with + Add Role / + Add Deliverable.'],
+      });
+      return false;
+    }
     const tag = document.getElementById('block-tag');
     if (tag && (meta.title || meta.blockName)) tag.textContent = meta.title || meta.blockName;
     this.render();
+    return true;
   }
 
   changed() {
@@ -43,7 +71,11 @@ export class RaciApp {
 
   initControls() {
     document.getElementById('btn-save')?.addEventListener('click', () => {
-      this.host.save(this.model.toBlock(), { title: this.model.matrixTitle, filename: this.model.matrixTitle });
+      try {
+        this.host.save(this.model.toBlock(), { title: this.model.matrixTitle, filename: this.model.matrixTitle });
+      } catch (err) {
+        window.APKSoftapp.showProblem('save_failed', { subject: this.model.matrixTitle, detail: err && err.message });
+      }
     });
 
     document.getElementById('btn-open')?.addEventListener('click', () => {
@@ -53,15 +85,19 @@ export class RaciApp {
       input.onchange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
+        const S = window.APKSoftapp;
         const reader = new FileReader();
         reader.onload = (evt) => {
+          let block;
           try {
-            this.handleBlockLoaded(JSON.parse(evt.target.result), { title: file.name });
-            this.host.changed(this.model.toBlock());
+            block = JSON.parse(evt.target.result);
           } catch (err) {
-            alert('Invalid block file: ' + err.message);
+            S.showProblem('bad_json', { subject: file.name, detail: err.message, onRetry: () => input.click() });
+            return;
           }
+          if (this.handleBlockLoaded(block, { title: file.name })) this.host.changed(this.model.toBlock());
         };
+        reader.onerror = () => S.showProblem('file_unreadable', { subject: file.name, detail: reader.error && reader.error.message, onRetry: () => input.click() });
         reader.readAsText(file);
       };
       input.click();
