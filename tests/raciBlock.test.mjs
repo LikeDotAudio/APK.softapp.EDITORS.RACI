@@ -25,7 +25,9 @@ test('RACI: the CAD loads a block, asks for it back, gets the same matrix at its
   assert.equal(ready.m.blockType, RACI_BLOCK_TYPE);
   assert.equal(model.matrixTitle, 'HANDOVER');
   assert.equal(saved.o, ORIGIN);
-  assert.deepEqual(saved.m.block, block);
+  assert.deepEqual([saved.m.block.id, saved.m.block.matrixTitle, saved.m.block.roles], [block.id, block.matrixTitle, block.roles]);
+  assert.deepEqual(saved.m.block.tasks, [{ ...block.tasks[0], id: 'task-1' }], 'a deliverable gets its stable id');
+  assert.equal(saved.m.block.schema, 'apk.raci/2');
   assert.equal(w.downloads.length, 0, 'no download when embedded');
 });
 

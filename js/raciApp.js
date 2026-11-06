@@ -4,9 +4,12 @@
    (window.APKSoftapp.connectHost, vendor/apk-softapp/); the matrix is APKTable
    'raci-matrix' and the roles APKTable 'raci-roles' (vendor/apk-table/).
    Nothing on the network carries a RACI matrix, so there is no "Discovered":
-   a matrix comes from the CAD or from a file. */
+   a matrix comes from the CAD or from a file.
+   bom-fm-3: standalone Save writes the block AND its .ifc twin (APKSoftapp.saveModel; js/raciIfc.js:
+   IfcActor per role, IfcTask per deliverable, IfcRelAssignsToActor per cell); Open takes either. */
 
 import { RaciModel, RACI_BLOCK_TYPE } from './raciModel.js';
+import { raciToIfc } from './raciIfc.js';
 
 export { RaciModel };
 
@@ -30,10 +33,11 @@ export class RaciApp {
       does: 'Says who is Responsible, Accountable, Consulted and Informed for each deliverable, and flags any deliverable with no single Accountable lead.',
       inputs: [
         { name: 'RACI block', from: 'the CAD drawing (raci_matrix block) when opened from the CAD', kind: 'cad' },
-        { name: 'Block file', from: 'a .json file picked with Open Block', kind: 'file' },
+        { name: 'Block or model file', from: 'a .json block or the .ifc twin this editor saved, picked with Open', kind: 'file' },
       ],
       outputs: [
-        { name: 'RACI block', to: 'the CAD drawing on Save & Return, or a .json download when standalone', kind: 'file' },
+        { name: 'RACI block', to: 'the CAD drawing on Save & Return', kind: 'file' },
+        { name: '<title>.json + <title>.ifc', to: 'standalone Save: the block and its IFC4X3 twin (IfcActor, IfcTask, IfcRelAssignsToActor)', kind: 'file' },
       ],
       controls: [
         { name: 'Matrix title', how: 'Type in the title box (top bar)' },
@@ -69,39 +73,45 @@ export class RaciApp {
     this.host.changed(this.model.toBlock());
   }
 
-  initControls() {
-    document.getElementById('btn-save')?.addEventListener('click', () => {
-      try {
-        this.host.save(this.model.toBlock(), { title: this.model.matrixTitle, filename: this.model.matrixTitle });
-      } catch (err) {
-        window.APKSoftapp.showProblem('save_failed', { subject: this.model.matrixTitle, detail: err && err.message });
-      }
-    });
+  /** In the CAD: the block goes back (Save & Return). Standalone: the block and its .ifc twin, both or neither. */
+  async save() {
+    const S = window.APKSoftapp;
+    if (window.parent === window) {
+      const r = await S.saveModel(this.model, { name: this.model.matrixTitle || 'raci', toIfc: (m) => raciToIfc(m), toJson: (m) => m.toBlock() });
+      if (!r.ok && !r.cancelled && r.problem) S.showProblem(r.problem);
+      return r;
+    }
+    try {
+      return this.host.save(this.model.toBlock(), { title: this.model.matrixTitle, filename: this.model.matrixTitle });
+    } catch (err) {
+      S.showProblem('save_failed', { subject: this.model.matrixTitle, detail: err && err.message });
+      return null;
+    }
+  }
 
-    document.getElementById('btn-open')?.addEventListener('click', () => {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json';
-      input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const S = window.APKSoftapp;
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          let block;
-          try {
-            block = JSON.parse(evt.target.result);
-          } catch (err) {
-            S.showProblem('bad_json', { subject: file.name, detail: err.message, onRetry: () => input.click() });
-            return;
-          }
-          if (this.handleBlockLoaded(block, { title: file.name })) this.host.changed(this.model.toBlock());
-        };
-        reader.onerror = () => S.showProblem('file_unreadable', { subject: file.name, detail: reader.error && reader.error.message, onRetry: () => input.click() });
-        reader.readAsText(file);
-      };
-      input.click();
+  /** Open a .json block or an .ifc this editor saved (an apk.raci/2 matrix). */
+  async open() {
+    const S = window.APKSoftapp;
+    const o = await S.openModel({
+      fromIfc: (text, name) => { this.model.loadIfc(text, name); return this.model; },
+      fromJson: (data) => {
+        if (!this.model.fromBlock(data)) throw new TypeError('this is not a RACI matrix: it has no roles or tasks list');
+        return this.model;
+      },
     });
+    if (!o.ok) {
+      if (!o.cancelled && o.problem) S.showProblem(o.problem, { onRetry: () => this.open() });
+      return o;
+    }
+    const tag = document.getElementById('block-tag');
+    if (tag) tag.textContent = o.name || 'RACI matrix';
+    this.changed();
+    return o;
+  }
+
+  initControls() {
+    document.getElementById('btn-save')?.addEventListener('click', () => this.save());
+    document.getElementById('btn-open')?.addEventListener('click', () => this.open());
 
     document.getElementById('btn-close')?.addEventListener('click', () => this.host.close());
 
